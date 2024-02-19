@@ -34,7 +34,7 @@ input_movies = movie_df.merge(
     right_on='title'
 )
 
-# Yeni gelen kullanıcı ile hali hazırda aynı filmleri rate etmiş kullanıcıları saptayalım
+# Identify users who have rated the same movies as the new user
 
 user_subset_df = pd.merge(
     left=rating_df,
@@ -57,15 +57,11 @@ user_subset_df.rename(
     inplace=True
 )
 
-# Artık 'user_subset_df' içerisinde benle aynı filmleri rate etmiş kullanıcılar var.
-# userId'lerine göre ilgili veri setini gruplayalım.
+# Group the data by userId
 
 user_subset_groups = user_subset_df.groupby(['userId'])
 
-# for name, group in user_subset_groups:
-#     print(f'Group Name: {name}\nGroup: {group}')
-
-# Yukarıda elde ettiğimiz veri kümesini sort edelim ki hali hazırda benimle aynı filmleri rate etmiş kullanıcıları daha verimli bir şekilde görelim.
+# Sort the groups based on the number of shared movies with the new user
 
 sorted_user_usesubset_group = sorted(
     user_subset_groups,
@@ -73,29 +69,25 @@ sorted_user_usesubset_group = sorted(
     reverse=True
 )
 
-# Çalışmanın bu sayfasında yeni gelen kullanıcı ile bu kullanıcının rate ettiği filmleri hali hazırda rate etmiş kullanıcılar arasındaki korelasyonu bulacağız. Burada korelasyon ile kullanıcılar arasındaki ilişkiyi inceleyeceğiz. Korelasyon istatistik biliminde yoğun olarak kullanılmaktadır ve farklı korelasyon türleri vardır. Biz burada Pearson Korelasyonunu kullanacağız.
+# We will determine the correlation between the newly arrived user and the users who have already rated the same movies as this user. Here, we will examine the relationship between users using correlation, which is extensively used in statistical science, and there are different types of correlations. We will use Pearson Correlation here.
 
-# Korelasyon sonucunu store etmek için bir dictionary yaratalım
+# Calculate Pearson correlation between the new user and existing users who have rated similar movies
 
 pearson_corellation_dict = {}
 
 for userId, group in sorted_user_usesubset_group:
-    # group girdisi ile 'input_movies' her iki tarafta bulunan movieId sütununa göre sıralıyoruz. Böylelikle değerler daha sonra birbirlerine karışmayacak nizami bir sıralama elde etmiş olacağım.
+
     group.sort_values(by='movieId', inplace=True)
     input_movies.sort_values(by='movieId', inplace=True)
 
-    # Pearson korelasyonnu hesaplamak için kullanılan formlü burada teşekkül etmemiz gerekecek. Bu yüzden formülde bulunan N katsayısını tanımlıyoruz
     n_rating = len(group)
 
-    # Merge işlemi yaparken söylediğim gibi merge işlemini isin() fonksiyonu ile yapabiliriz.
-    # grouplar içerisindeki movieId ile input_movies'deki movieId'lerden iki veri setini birleştiriyoruz. Ayık olun yukarıda bu iki setini sort ederek hizalamıştık.
+
     temp_df = input_movies[input_movies['movieId'].isin(group['movieId'].tolist())]
 
-    # yukarıdaki satırda yapılan işlem sonucunda bize gereksiz bir çok sütun oluşturur. Bize sadece rating bilgisi gerekli olduğu için onları select edelim.
+
     temp_rating_list = temp_df['rating'].tolist()
     temp_group_list = group['rating'].tolist()
-
-    # Bu ana kadar korelasyon formülünü uygulamak için ihtiyaç duyulan argümanların hazırlığını yaptık. Şimdi X ve Y olarak nitelendireceğimiz iki attribute arasındaki benzerliği bulacağız.
 
     Sxx = sum([i ** 2 for i in temp_rating_list]) - pow(sum(temp_rating_list), 2) / float(n_rating)
     Syy = sum([i ** 2 for i in temp_group_list]) - pow(sum(temp_group_list), 2) / float(n_rating)
